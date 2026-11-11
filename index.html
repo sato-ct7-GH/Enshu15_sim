@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>電場と磁場中の荷電粒子</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --ink:#15181d; --sub:#5b6370; --line:#d9dde3;
+  --grid:#eceef2; --accent:#1f4fa3; --accent-ink:#ffffff;
+  --vel:#1f6fd1; --fe:#d9822b; --fb:#2b9a5a; --ft:#c62f3a; --path:#15181d; --ghost:#b9c0cb;
+  --obs:#7b4fc9; --field:#c9cfd8;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111418; --panel:#1a1e24; --ink:#eef1f5; --sub:#a4adba; --line:#2e343d;
+    --grid:#20252c; --accent:#6f9cf0; --accent-ink:#0d1117;
+    --vel:#5aa2ff; --fe:#f0a14f; --fb:#4fc684; --ft:#ff6b74; --path:#eef1f5; --ghost:#4a525e;
+    --obs:#b08cf5; --field:#39404a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111418; --panel:#1a1e24; --ink:#eef1f5; --sub:#a4adba; --line:#2e343d;
+  --grid:#20252c; --accent:#6f9cf0; --accent-ink:#0d1117;
+  --vel:#5aa2ff; --fe:#f0a14f; --fb:#4fc684; --ft:#ff6b74; --path:#eef1f5; --ghost:#4a525e;
+  --obs:#b08cf5; --field:#39404a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Hiragino Sans","Yu Gothic UI","Yu Gothic","Noto Sans JP",system-ui,sans-serif;font-size:17px;line-height:1.55}
+.wrap{max-width:1280px;margin:0 auto;padding:16px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;margin-bottom:10px}
+h1{font-size:1.45rem;margin:0;letter-spacing:.02em}
+.tag{font-size:.9rem;color:var(--sub)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px}
+@media (max-width:960px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.stage{padding:8px}
+canvas{display:block;width:100%;height:auto;border-radius:6px;touch-action:none}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 4px 2px}
+button{font:inherit;font-size:.95rem;padding:7px 14px;border-radius:8px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:none;border-radius:0;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+label.chk{display:inline-flex;align-items:center;gap:5px;font-size:.92rem;margin-right:8px;white-space:nowrap}
+.sw{display:inline-block;width:14px;height:4px;border-radius:2px}
+h2{font-size:1.02rem;margin:4px 0 8px}
+.row{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px dashed var(--line);font-variant-numeric:tabular-nums}
+.row:last-child{border-bottom:none}
+.row span:first-child{color:var(--sub)}
+.row b{font-weight:600}
+.slider{margin:8px 0 4px}
+.slider input{width:100%}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.presets button{padding:4px 10px;font-size:.88rem}
+.note{font-size:.86rem;color:var(--sub);margin:6px 0 0}
+.side{display:flex;flex-direction:column;gap:14px}
+.qs{margin-top:14px}
+.q{border-top:1px solid var(--line);padding:10px 2px}
+.q:first-of-type{border-top:none}
+.qh{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.qh p{margin:0}
+.ans{margin:8px 0 0;padding:8px 12px;border-left:4px solid var(--accent);background:var(--grid);border-radius:4px;display:none}
+.ans.show{display:block}
+.qs button{white-space:nowrap;padding:4px 10px;font-size:.88rem}
+.theme{margin-left:auto}
+.fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;font-size:.86em;line-height:1.15;margin:0 2px}
+.fr span:first-child{border-bottom:1px solid currentColor;padding:0 2px}
+.ans{font-size:1.02rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>No.15［C］電場と磁場がある場合の荷電粒子の運動</h1>
+    <span class="tag">設問 (9)〜(12) の観察モデル</span>
+    <button class="theme" id="themeBtn" title="表示の明暗を切りかえる">表示：自動</button>
+  </header>
+
+  <div class="grid">
+    <div>
+      <div class="card stage">
+        <canvas id="cv" width="1200" height="560" aria-label="荷電粒子の軌跡"></canvas>
+        <div class="bar">
+          <button class="primary" id="play">▶ 再生</button>
+          <button id="reset">↺ 最初から</button>
+          <button id="step">1/8 周期すすめる</button>
+          <span class="seg" role="group" aria-label="見る立場">
+            <button id="mLab" aria-pressed="true">静止した観測者</button>
+            <button id="mObs" aria-pressed="false">動く観測者</button>
+          </span>
+        </div>
+        <div class="bar">
+          <label class="chk"><input type="checkbox" id="cV" checked><span class="sw" style="background:var(--vel)"></span>速度</label>
+          <label class="chk"><input type="checkbox" id="cE" checked><span class="sw" style="background:var(--fe)"></span>電場の力 qE₀</label>
+          <label class="chk"><input type="checkbox" id="cB" checked><span class="sw" style="background:var(--fb)"></span>ローレンツ力</label>
+          <label class="chk"><input type="checkbox" id="cT"><span class="sw" style="background:var(--ft)"></span>合力</label>
+          <label class="chk"><input type="checkbox" id="cC" checked><span class="sw" style="background:var(--obs)"></span>観測者と円運動の円</label>
+          <label class="chk"><input type="checkbox" id="cG" checked>軌跡の予想線</label>
+        </div>
+      </div>
+
+      <div class="card qs">
+        <h2>設問との対応</h2>
+        <div class="q"><div class="qh"><p><b>(9)</b> 速度 (<i>v<sub>x</sub></i>, <i>v<sub>y</sub></i>) の粒子にはたらく力の成分 <i>F<sub>x</sub></i>，<i>F<sub>y</sub></i></p><button data-a="a9">答えを表示</button></div>
+          <div class="ans" id="a9"><i>F<sub>x</sub></i> = <i>q</i><i>v<sub>y</sub></i><i>B</i><sub>0</sub>，　<i>F<sub>y</sub></i> = <i>q</i><i>E</i><sub>0</sub> − <i>q</i><i>v<sub>x</sub></i><i>B</i><sub>0</sub><br><span class="note">右の数値パネルの <i>F<sub>x</sub></i>，<i>F<sub>y</sub></i> が，いつでもこの式どおりになっていることを確かめよう。</span></div></div>
+        <div class="q"><div class="qh"><p><b>(10)</b> 等速円運動に見える観測者の速さ <i>v</i><sub>2</sub></p><button data-a="a10">答えを表示</button></div>
+          <div class="ans" id="a10"><i>v</i><sub>2</sub> = <span class="fr"><span><i>E</i><sub>0</sub></span><span><i>B</i><sub>0</sub></span></span><br><span class="note"><i>F<sub>y</sub></i> = −<i>q</i><i>B</i><sub>0</sub>(<i>v<sub>x</sub></i> − <span class="fr"><span><i>E</i><sub>0</sub></span><span><i>B</i><sub>0</sub></span></span>)。「動く観測者」で観測者の速さを <span class="fr"><span><i>E</i><sub>0</sub></span><span><i>B</i><sub>0</sub></span></span> にすると円運動に見える。ほかの速さでは円にならない。</span></div></div>
+        <div class="q"><div class="qh"><p><b>(11)</b> その観測者から見た円運動の半径 <i>R</i></p><button data-a="a11">答えを表示</button></div>
+          <div class="ans" id="a11"><i>R</i> = <span class="fr"><span><i>m</i><i>E</i><sub>0</sub></span><span><i>q</i><i>B</i><sub>0</sub><sup>2</sup></span></span><br><span class="note">観測者から見た初速度は <span class="fr"><span>2<i>E</i><sub>0</sub></span><span><i>B</i><sub>0</sub></span></span> − <i>v</i><sub>2</sub> = <span class="fr"><span><i>E</i><sub>0</sub></span><span><i>B</i><sub>0</sub></span></span>。</span></div></div>
+        <div class="q"><div class="qh"><p><b>(12)</b> 静止した観測者から見た <i>y</i> 座標の最小値 <i>y</i><sub>min</sub></p><button data-a="a12">答えを表示</button></div>
+          <div class="ans" id="a12"><i>y</i><sub>min</sub> = −2<i>R</i> = −<span class="fr"><span>2<i>m</i><i>E</i><sub>0</sub></span><span><i>q</i><i>B</i><sub>0</sub><sup>2</sup></span></span><br><span class="note">最下点では速さ 0（とがった点）。仕事と運動エネルギーの関係 0 − <span class="fr"><span>1</span><span>2</span></span><i>m</i>(<span class="fr"><span>2<i>E</i><sub>0</sub></span><span><i>B</i><sub>0</sub></span></span>)<sup>2</sup> = <i>q</i><i>E</i><sub>0</sub><i>y</i><sub>min</sub> でも確かめられる。</span></div></div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="card">
+        <h2>初速度の大きさ</h2>
+        <div class="slider">
+          <input type="range" id="v0" min="0" max="3" step="0.05" value="2" aria-label="初速度">
+        </div>
+        <div class="row"><span>O での速さ（<i>x</i> 軸正の向き）</span><b id="v0txt">2.00 E₀/B₀</b></div>
+        <div class="presets">
+          <button data-v="2">2 E₀/B₀（問題）</button>
+          <button data-v="1">1 E₀/B₀</button>
+          <button data-v="0">0（静止から）</button>
+          <button data-v="3">3 E₀/B₀</button>
+        </div>
+        <p class="note">電場 <i>E</i><sub>0</sub> は <i>y</i> 軸正の向き，磁場 <i>B</i><sub>0</sub> は紙面の裏から表（<i>z</i> 軸正）。<i>q</i> &gt; 0。</p>
+      </div>
+
+      <div class="card">
+        <h2>観測者の速さ（<i>x</i> 軸正の向き）</h2>
+        <div class="slider">
+          <input type="range" id="vob" min="0" max="3" step="0.05" value="1" aria-label="観測者の速さ">
+        </div>
+        <div class="row"><span>観測者の速さ <i>v</i></span><b id="vobtxt">1.00 E₀/B₀</b></div>
+        <div class="row"><span>観測者から見た電場 <i>E</i>′ = <i>E</i><sub>0</sub> − <i>v</i><i>B</i><sub>0</sub></span><b id="r_ep">0.00 E₀</b></div>
+        <div class="presets">
+          <button data-o="1">E₀/B₀（＝<i>v</i><sub>2</sub>）</button>
+          <button data-o="0">0（静止）</button>
+          <button data-o="0.5">0.5 E₀/B₀</button>
+          <button data-o="2">2 E₀/B₀</button>
+        </div>
+        <p class="note">観測者から見ると，粒子にはたらく力は <i>F<sub>y</sub></i> = <i>q</i>(<i>E</i><sub>0</sub> − <i>v</i><i>B</i><sub>0</sub>) − <i>q</i><i>v</i>′<sub><i>x</i></sub><i>B</i><sub>0</sub> と書ける。<i>E</i>′ = 0 のときだけ力はローレンツ力のみとなり，等速円運動に見える。スライダーを動かすと「動く観測者」の画面に切りかわる。</p>
+      </div>
+
+      <div class="card">
+        <h2>いまの値</h2>
+        <div class="row"><span>時刻 <i>t</i></span><b id="o_t">0.000 T</b></div>
+        <div class="row"><span>位置 (<i>x</i>, <i>y</i>)</span><b id="o_xy"></b></div>
+        <div class="row"><span>速度 (<i>v<sub>x</sub></i>, <i>v<sub>y</sub></i>)</span><b id="o_v"></b></div>
+        <div class="row"><span>速さ</span><b id="o_s"></b></div>
+        <div class="row"><span>観測者から見た速度 (<i>v</i>′<sub><i>x</i></sub>, <i>v</i>′<sub><i>y</i></sub>)</span><b id="o_vp"></b></div>
+        <div class="row"><span><i>F<sub>x</sub></i> = <i>q</i><i>v<sub>y</sub></i><i>B</i><sub>0</sub></span><b id="o_fx"></b></div>
+        <div class="row"><span><i>F<sub>y</sub></i> = <i>q</i><i>E</i><sub>0</sub> − <i>q</i><i>v<sub>x</sub></i><i>B</i><sub>0</sub></span><b id="o_fy"></b></div>
+        <div class="row"><span>運動エネルギーの変化</span><b id="o_dk"></b></div>
+        <div class="row"><span>電場がした仕事 <i>q</i><i>E</i><sub>0</sub><i>y</i></span><b id="o_w"></b></div>
+        <p class="note">単位：長さ <i>R</i> = <span class="fr"><span><i>m</i><i>E</i><sub>0</sub></span><span><i>q</i><i>B</i><sub>0</sub><sup>2</sup></span></span>，時間 <i>T</i> = <span class="fr"><span>2π<i>m</i></span><span><i>q</i><i>B</i><sub>0</sub></span></span>，速さ <span class="fr"><span><i>E</i><sub>0</sub></span><span><i>B</i><sub>0</sub></span></span>，力 <i>q</i><i>E</i><sub>0</sub>，エネルギー <span class="fr"><span><i>m</i><i>E</i><sub>0</sub><sup>2</sup></span><span><i>B</i><sub>0</sub><sup>2</sup></span></span></p>
+      </div>
+
+      <div class="card">
+        <h2>この初速度での結果</h2>
+        <div class="row"><span>円運動に見える観測者の速さ <i>v</i><sub>2</sub></span><b id="r_v2">1.00 E₀/B₀</b></div>
+        <div class="row"><span>その観測者から見た半径</span><b id="r_R"></b></div>
+        <div class="row"><span><i>y</i> の最小値</span><b id="r_ymin"></b></div>
+        <div class="row"><span><i>y</i> の最大値</span><b id="r_ymax"></b></div>
+        <div class="row"><span>1 周期で進む距離</span><b id="r_dx">2π R</b></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // 無次元化：長さ R0 = mE0/(qB0^2)，時間 T = 2πm/(qB0)，速さ E0/B0，力 qE0
+  // 解：u0 = v0 - 1（観測者から見た初速度）
+  //   x = 2πτ + u0 sin(2πτ),  y = u0 (cos(2πτ) - 1)
+  //   vx = 1 + u0 cos(2πτ),   vy = -u0 sin(2πτ)    （速さの単位 E0/B0 = 2π R0/T）
+  const TAU = 2 * Math.PI;
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const $ = id => document.getElementById(id);
+
+  let v0 = 2, vob = 1, tau = 0, playing = false, mode = 'lab', last = null, camX = null;
+  const RATE = 0.12; // 1 秒あたりの周期数
+
+  const u0 = () => v0 - 1;
+  const pos = t => { const u = u0(); return [TAU * t + u * Math.sin(TAU * t), u * (Math.cos(TAU * t) - 1)]; };
+  const vel = t => { const u = u0(); return [1 + u * Math.cos(TAU * t), -u * Math.sin(TAU * t)]; };
+
+  function css(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  // ---------- 画面サイズ ----------
+  function fit(){
+    const r = cv.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(320, r.width);
+    const h = Math.round(w * (window.innerWidth < 700 ? 0.75 : 0.47));
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    cv.style.height = h + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw();
+  }
+
+  // ---------- 視野 ----------
+  function view(W, H){
+    const u = u0();
+    const ymin = Math.min(0, -2 * u) - 0.9, ymax = Math.max(0, -2 * u) + 0.9;
+    const s = Math.min((H - 60) / (ymax - ymin), W / (mode === 'obs' ? 9 : 15));
+    const span = W / s;
+    const px = pos(tau)[0] - (mode === 'obs' ? vob * TAU * tau : 0);
+    if (camX === null) camX = mode === 'obs' ? -0.5 * span : -1.2;
+    if (px < camX + 0.12 * span) camX = px - 0.12 * span;
+    if (px > camX + 0.78 * span) camX = px - 0.78 * span;
+    return { s, x0: camX, ymid: (ymin + ymax) / 2 + 30 / s, H };
+  }
+  function toScreen(v, x, y, W, H){ return [(x - v.x0) * v.s, H / 2 - (y - v.ymid) * v.s]; }
+
+  function arrow(x1, y1, x2, y2, color, width = 3, label){
+    const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy);
+    if (L < 2) return;
+    const ux = dx / L, uy = dy / L, hl = Math.min(14, L * 0.45);
+    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - ux * hl * 0.8, y2 - uy * hl * 0.8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - ux * hl - uy * hl * 0.5, y2 - uy * hl + ux * hl * 0.5);
+    ctx.lineTo(x2 - ux * hl + uy * hl * 0.5, y2 - uy * hl - ux * hl * 0.5);
+    ctx.closePath(); ctx.fill();
+    if (label){
+      ctx.font = '600 15px system-ui, sans-serif';
+      ctx.fillText(label, x2 + ux * 8 + 4, y2 + uy * 8 + 5);
+    }
+  }
+
+  function draw(){
+    const W = cv.clientWidth, H = parseFloat(cv.style.height) || cv.height;
+    const C = { grid: css('--grid'), line: css('--line'), sub: css('--sub'), ink: css('--ink'), vel: css('--vel'),
+      fe: css('--fe'), fb: css('--fb'), ft: css('--ft'), path: css('--path'), ghost: css('--ghost'), obs: css('--obs'),
+      field: css('--field'), panel: css('--panel') };
+    ctx.fillStyle = C.panel; ctx.fillRect(0, 0, W, H);
+    const v = view(W, H);
+    const S = (x, y) => toScreen(v, x, y, W, H);
+    const shift = mode === 'obs' ? vob * TAU * tau : 0;   // 観測者の位置（静止系での x）
+    const P = t => { const [x, y] = pos(t); return [x - (mode === 'obs' ? vob * TAU * t : 0), y]; };
+
+    // 世界座標の範囲
+    const [wx0, wy1] = [v.x0, v.ymid + H / 2 / v.s];
+    const wx1 = wx0 + W / v.s, wy0 = wy1 - H / v.s;
+
+    // 磁場（・）と電場の矢印（背景）
+    ctx.fillStyle = C.field; ctx.strokeStyle = C.field; ctx.lineWidth = 1.2;
+    const gstep = 1;
+    const offx = -(shift % gstep);
+    for (let gx = Math.floor(wx0) + offx; gx <= wx1 + 1; gx += gstep){
+      for (let gy = Math.floor(wy0); gy <= wy1; gy += gstep){
+        const [sx, sy] = S(gx + 0.5, gy + 0.5);
+        ctx.beginPath(); ctx.arc(sx, sy, 5, 0, TAU); ctx.stroke();
+        ctx.beginPath(); ctx.arc(sx, sy, 1.6, 0, TAU); ctx.fill();
+      }
+    }
+    for (let gx = Math.floor(wx0) + offx; gx <= wx1 + 1; gx += 2){
+      const [sx, sy] = S(gx, wy0 + 0.25);
+      arrow(sx, sy, sx, sy - 0.55 * v.s, C.field, 1.6);
+    }
+
+    // 軸
+    ctx.strokeStyle = C.sub; ctx.lineWidth = 1.2;
+    const [ax0, ay] = S(wx0, 0), [ax1] = S(wx1, 0);
+    ctx.beginPath(); ctx.moveTo(ax0, ay); ctx.lineTo(ax1, ay); ctx.stroke();
+    ctx.fillStyle = C.sub; ctx.font = '15px system-ui, sans-serif';
+    if (mode === 'obs') ctx.fillText("x′（観測者とともに動く座標）", ax0 + 10, ay + 20); else ctx.fillText('x', ax1 - 16, ay - 8);
+    if (mode === 'lab'){
+      const [yx, yt] = S(0, wy1), [, yb] = S(0, wy0);
+      ctx.beginPath(); ctx.moveTo(yx, yb); ctx.lineTo(yx, yt); ctx.stroke();
+      ctx.fillText('y', yx + 6, yt + 16);
+      const [ox, oy] = S(0, 0); ctx.fillText('O', ox - 16, oy + 18);
+      // x 目盛り（2πR ごと）
+      for (let k = 1; k * TAU < wx1; k++){
+        const [tx, ty] = S(k * TAU, 0);
+        ctx.beginPath(); ctx.moveTo(tx, ty - 5); ctx.lineTo(tx, ty + 5); ctx.stroke();
+        ctx.fillText(k === 1 ? '2πR' : k + '·2πR', tx - 14, ty + 20);
+      }
+    } else {
+      const [yx, yt] = S(0, wy1), [, yb] = S(0, wy0);
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(yx, yb); ctx.lineTo(yx, yt); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // y_min, y_max の線
+    const u = u0();
+    const yLow = -2 * u;
+    if (Math.abs(u) > 1e-6){
+      ctx.setLineDash([7, 6]); ctx.strokeStyle = C.sub; ctx.lineWidth = 1;
+      const [lx0, ly] = S(wx0, yLow), [lx1] = S(wx1, yLow);
+      ctx.beginPath(); ctx.moveTo(lx0, ly); ctx.lineTo(lx1, ly); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = C.sub;
+      const tx = `${yLow < 0 ? 'y の最小値' : 'y の最大値'}  y = ${fmt(yLow)} R`;
+      ctx.fillText(tx, lx1 - ctx.measureText(tx).width - 10, ly + (yLow < 0 ? 18 : -8));
+    }
+
+    // 予想線（先の軌跡）
+    if ($('cG').checked){
+      ctx.strokeStyle = C.ghost; ctx.lineWidth = 1.5; ctx.setLineDash([3, 5]);
+      ctx.beginPath();
+      const t1 = mode === 'obs' ? tau + 1.5 : tau + 2.5;
+      for (let t = tau, i = 0; t <= t1; t += 0.004, i++){
+        const [x, y] = P(t), [sx, sy] = S(x, y);
+        i ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy);
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    // 円運動の円（中心は静止系で速さ E0/B0）と観測者
+    if ($('cC').checked){
+      const vc = mode === 'obs' ? 1 - vob : 1;          // 画面上での円の中心の速さ
+      const same = Math.abs(1 - vob) < 0.01;
+      if (Math.abs(u) > 1e-6){
+        const [sx, sy] = S(vc * TAU * tau, -u);
+        ctx.strokeStyle = C.obs; ctx.lineWidth = 1.8; ctx.setLineDash([8, 6]);
+        ctx.beginPath(); ctx.arc(sx, sy, Math.abs(u) * v.s, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = C.obs; ctx.beginPath(); ctx.arc(sx, sy, 4.5, 0, TAU); ctx.fill();
+        ctx.font = '600 15px system-ui, sans-serif';
+        const lab = mode === 'lab' ? '円の中心（速さ E₀/B₀ で移動）' : (same ? '円の中心（観測者から見て静止）' : `円の中心（${vc > 0 ? '+x' : '−x'} 向きに ${fmt(Math.abs(vc))} E₀/B₀ で移動）`);
+        const lw = ctx.measureText(lab).width;
+        ctx.fillText(lab, Math.min(Math.max(sx - lw / 2, 8), W - lw - 8), u > 0 ? sy - Math.abs(u) * v.s - 10 : sy + Math.abs(u) * v.s + 20);
+      }
+      // 観測者（四角）
+      const ox = mode === 'obs' ? 0 : vob * TAU * tau, oyw = -u;
+      const [qx, qy] = S(ox, oyw);
+      ctx.strokeStyle = C.obs; ctx.lineWidth = 2.2;
+      ctx.strokeRect(qx - 8, qy - 8, 16, 16);
+      ctx.fillStyle = C.obs; ctx.font = '600 15px system-ui, sans-serif';
+      const olab = mode === 'obs' ? '観測者' : `観測者（速さ ${fmt(vob)} E₀/B₀）`;
+      const ow = ctx.measureText(olab).width;
+      ctx.fillText(olab, Math.min(Math.max(qx - ow / 2, 8), W - ow - 8), qy + (u > 0 ? 28 : -16));
+      if (mode === 'lab' && vob > 0.01) arrow(qx + 10, qy, qx + 10 + vob * 0.9 * v.s, qy, C.obs, 2);
+      if (mode === 'obs' && !same && Math.abs(u) > 1e-6){
+        const [cx2, cy2] = S(vc * TAU * tau, -u);
+        arrow(cx2, cy2, cx2 + vc * 0.9 * v.s, cy2, C.obs, 2);
+      }
+    }
+
+    // 軌跡（通ってきた道）
+    ctx.strokeStyle = C.path; ctx.lineWidth = 2.6; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    const tStart = mode === 'obs' ? Math.max(0, tau - 1.5) : 0;
+    for (let t = tStart, i = 0; t <= tau + 1e-9; t += 0.003, i++){
+      const [x, y] = P(t), [sx, sy] = S(x, y);
+      i ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy);
+    }
+    { const [x, y] = P(tau), [sx, sy] = S(x, y); ctx.lineTo(sx, sy); }
+    ctx.stroke();
+
+    // 粒子とベクトル
+    const [px, py] = P(tau), [sx, sy] = S(px, py);
+    const [vx, vy] = vel(tau);
+    const fx = vy, fy = 1 - vx;      // 単位 qE0
+    const VS = 0.85 * v.s, FS = 0.85 * v.s;
+    const vxo = mode === 'obs' ? vx - vob : vx;
+    if ($('cE').checked) arrow(sx, sy, sx, sy - FS, C.fe, 3, 'qE₀');
+    if ($('cB').checked) arrow(sx, sy, sx + vy * FS, sy + vx * FS, C.fb, 3, 'f');
+    if ($('cT').checked) arrow(sx, sy, sx + fx * FS, sy - fy * FS, C.ft, 3.5, 'F');
+    if ($('cV').checked) arrow(sx, sy, sx + vxo * VS, sy - vy * VS, C.vel, 3.5, mode === 'obs' ? 'v′' : 'v');
+    ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(sx, sy, 7, 0, TAU); ctx.fill();
+    ctx.fillStyle = C.panel; ctx.font = '700 11px system-ui, sans-serif'; ctx.fillText('+', sx - 3.5, sy + 4);
+
+    // 見出し
+    ctx.globalAlpha = 0.9; ctx.fillStyle = C.panel; ctx.fillRect(0, 0, W, 54); ctx.globalAlpha = 1;
+    ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, 54.5); ctx.lineTo(W, 54.5); ctx.stroke();
+    ctx.fillStyle = C.ink; ctx.font = '600 16px system-ui, sans-serif';
+    ctx.fillText(mode === 'obs' ? `速さ ${fmt(vob)} E₀/B₀ で x 軸正の向きに動く観測者から見た運動` + (Math.abs(1 - vob) < 0.01 ? '（＝ v₂：等速円運動）' : '') : '静止した観測者から見た運動', 12, 24);
+    ctx.fillStyle = C.sub; ctx.font = '14px system-ui, sans-serif';
+    ctx.fillText('電場 E₀：y 軸正の向き　　磁場 B₀：紙面の裏から表（⊙）', 12, 44);
+
+    updatePanel(px + (mode === 'obs' ? vob * TAU * tau : 0), py, vx, vy, fx, fy);
+  }
+
+  function fmt(x, d = 2){ const s = (Math.abs(x) < 0.5 * Math.pow(10, -d) ? 0 : x).toFixed(d); return s === '-0.00' ? '0.00' : s; }
+
+  function updatePanel(x, y, vx, vy, fx, fy){
+    $('o_t').textContent = tau.toFixed(3) + ' T';
+    $('o_xy').textContent = `(${fmt(x)},  ${fmt(y)}) R`;
+    $('o_v').textContent = `(${fmt(vx)},  ${fmt(vy)}) E₀/B₀`;
+    $('o_s').textContent = fmt(Math.hypot(vx, vy)) + ' E₀/B₀';
+    $('o_vp').textContent = `(${fmt(vx - vob)},  ${fmt(vy)}) E₀/B₀`;
+    $('o_fx').textContent = fmt(fx) + ' qE₀';
+    $('o_fy').textContent = fmt(fy) + ' qE₀';
+    const dK = 0.5 * (vx * vx + vy * vy) - 0.5 * v0 * v0;
+    $('o_dk').textContent = fmt(dK);
+    $('o_w').textContent = fmt(y);
+  }
+
+  function updateResults(){
+    const u = u0();
+    $('v0txt').textContent = v0.toFixed(2) + ' E₀/B₀';
+    $('vobtxt').textContent = vob.toFixed(2) + ' E₀/B₀';
+    $('r_ep').textContent = fmt(1 - vob) + ' E₀';
+    $('r_R').textContent = fmt(Math.abs(u)) + ' R';
+    $('r_ymin').textContent = fmt(Math.min(0, -2 * u)) + ' R';
+    $('r_ymax').textContent = fmt(Math.max(0, -2 * u)) + ' R';
+  }
+
+  // ---------- 操作 ----------
+  function loop(ts){
+    if (!playing){ last = null; return; }
+    if (last != null) tau += (ts - last) / 1000 * RATE;
+    last = ts; draw(); requestAnimationFrame(loop);
+  }
+  $('play').onclick = () => {
+    playing = !playing; $('play').textContent = playing ? '❚❚ 一時停止' : '▶ 再生';
+    if (playing) requestAnimationFrame(loop);
+  };
+  $('reset').onclick = () => { tau = 0; camX = null; draw(); };
+  $('step').onclick = () => { tau = Math.round((tau + 0.125) * 8) / 8; draw(); };
+  function setMode(m){
+    mode = m; camX = null;
+    $('mLab').setAttribute('aria-pressed', m === 'lab');
+    $('mObs').setAttribute('aria-pressed', m === 'obs');
+    draw();
+  }
+  $('mLab').onclick = () => setMode('lab');
+  $('mObs').onclick = () => setMode('obs');
+  ['cV','cE','cB','cT','cC','cG'].forEach(id => $(id).onchange = draw);
+  $('v0').oninput = e => { v0 = parseFloat(e.target.value); tau = 0; camX = null; updateResults(); draw(); };
+  function setObs(val){
+    vob = val; $('vob').value = val; camX = null; updateResults();
+    if (mode !== 'obs') setMode('obs'); else draw();
+  }
+  $('vob').oninput = e => setObs(parseFloat(e.target.value));
+  document.querySelectorAll('[data-o]').forEach(b => b.onclick = () => setObs(parseFloat(b.dataset.o)));
+  document.querySelectorAll('[data-v]').forEach(b => b.onclick = () => {
+    v0 = parseFloat(b.dataset.v); $('v0').value = v0; tau = 0; camX = null; updateResults(); draw();
+  });
+  document.querySelectorAll('.qs button').forEach(b => b.onclick = () => {
+    const a = $(b.dataset.a); a.classList.toggle('show');
+    b.textContent = a.classList.contains('show') ? '答えを隠す' : '答えを表示';
+  });
+
+  // 表示の明暗
+  const themes = ['auto', 'light', 'dark'], names = { auto: '自動', light: '明るい', dark: '暗い' };
+  let th = 'auto';
+  try { th = localStorage.getItem('no15-theme') || 'auto'; } catch (e) {}
+  function applyTheme(){
+    if (th === 'auto') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', th);
+    $('themeBtn').textContent = '表示：' + names[th]; draw();
+  }
+  $('themeBtn').onclick = () => {
+    th = themes[(themes.indexOf(th) + 1) % 3];
+    try { localStorage.setItem('no15-theme', th); } catch (e) {}
+    applyTheme();
+  };
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', draw);
+
+  // 数式
+  function renderMath(){
+    if (!window.katex) return;
+    const walk = el => {
+      for (const n of [...el.childNodes]){
+        if (n.nodeType === 3 && n.textContent.includes('$')){
+          const parts = n.textContent.split(/(\$[^$]+\$)/);
+          const frag = document.createDocumentFragment();
+          for (const p of parts){
+            if (p.startsWith('$') && p.endsWith('$') && p.length > 1){
+              const s = document.createElement('span');
+              try { katex.render(p.slice(1, -1), s, { throwOnError: false }); } catch (e) { s.textContent = p; }
+              frag.appendChild(s);
+            } else frag.appendChild(document.createTextNode(p));
+          }
+          n.replaceWith(frag);
+        } else if (n.nodeType === 1 && n.tagName !== 'SCRIPT' && n.tagName !== 'CANVAS') walk(n);
+      }
+    };
+    walk(document.body);
+  }
+  window.addEventListener('resize', fit);
+  updateResults(); applyTheme(); fit();
+})();
+</script>
+</body>
+</html>
